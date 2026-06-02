@@ -7,6 +7,7 @@ import BusPassModule from './components/BusPass';
 import AdminModule from './components/AdminModule';
 import QRVerification from './components/QRVerification';
 import CloudMonitoring from './components/CloudMonitoring';
+import { api } from './lib/api';
 import { Bus, ShieldAlert, Monitor, Terminal, LayoutDashboard, Ticket as TicketIcon, CreditCard, LogOut } from 'lucide-react';
 
 export default function App() {
@@ -23,35 +24,25 @@ export default function App() {
   const fetchAllSystemData = async (user_id?: string) => {
     const uid = user_id || currentUser?.id;
     try {
-      const routesRes = await fetch('/api/routes');
-      const isRoutesJson = routesRes.ok && routesRes.headers.get('content-type')?.includes('application/json');
-      if (isRoutesJson) {
-        const routesData = await routesRes.json();
-        setRoutes(routesData);
-        setConnectionStatus('connected');
-      } else {
-        setConnectionStatus('disconnected');
-      }
+      const conn = await api.checkConnectionStatus();
+      setConnectionStatus(conn);
+
+      const routesData = await api.getRoutes();
+      setRoutes(routesData);
 
       if (uid) {
-        // Fetch tickets and passes for this specific user or ALL tickets if admin
         const isAdmin = currentUser?.role === 'admin' || uid === 'usr_admin';
-        const ticketsUrl = isAdmin ? '/api/tickets' : `/api/tickets?userId=${uid}`;
-        const passesUrl = isAdmin ? '/api/passes' : `/api/passes?userId=${uid}`;
+        const roleStr = isAdmin ? 'admin' : 'passenger';
 
-        const [ticketsRes, passesRes] = await Promise.all([
-          fetch(ticketsUrl),
-          fetch(passesUrl)
+        const [ticketsData, passesData] = await Promise.all([
+          api.getTickets(uid, roleStr),
+          api.getPasses(uid, roleStr)
         ]);
 
-        const isTicketsJson = ticketsRes.ok && ticketsRes.headers.get('content-type')?.includes('application/json');
-        const isPassesJson = passesRes.ok && passesRes.headers.get('content-type')?.includes('application/json');
-
-        if (isTicketsJson) setTickets(await ticketsRes.json());
-        if (isPassesJson) setPasses(await passesRes.json());
+        setTickets(ticketsData);
+        setPasses(passesData);
       }
     } catch (err) {
-      // Gracefully catch and set connection state, avoiding destructive unhandled console logging
       setConnectionStatus('disconnected');
       console.warn("Central Ledger Node temporarily offline. Retrying automatically in background...", err);
     }

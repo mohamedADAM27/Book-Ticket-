@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Ticket } from '../types';
+import { api } from '../lib/api';
 
 interface QRVerificationProps {
   tickets: Ticket[];
@@ -30,14 +31,8 @@ export default function QRVerification({ tickets, onTriggerRefresh }: QRVerifica
     }, 450);
 
     try {
-      const response = await fetch('/api/verify-ticket', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrCodeCode: qrInput.trim() })
-      });
-
-      const data = await response.json();
-      setVerificationResult(data);
+      const data = await api.verifyQR(qrInput);
+      setVerificationResult(data as any);
       onTriggerRefresh(); // refresh main wallet tickets to see dynamic updates
     } catch (err) {
       setVerificationResult({

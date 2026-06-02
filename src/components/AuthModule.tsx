@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
+import { api } from '../lib/api';
 
 interface AuthModuleProps {
   onLoginSuccess: (user: User) => void;
@@ -27,37 +28,14 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
     }
 
     try {
-      const endpoint = isRegistering ? '/api/register' : '/api/login';
-      const payload = isRegistering ? { name, email, password } : { email, password };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const contentType = response.headers.get('content-type');
-      let data: any = {};
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        const snippet = text.trim().substring(0, 120);
-        throw new Error(`Server returned system response (${response.status}): ${snippet}... Please try quick-login or check server stats.`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Identity verification failed');
-      }
-
       if (isRegistering) {
+        await api.register(name, email, password);
         setSuccessMessage('Passenger account created successfully! Please sign in.');
         setIsRegistering(false);
-        // Clean fields
         setPassword('');
       } else {
-        onLoginSuccess(data);
+        const userData = await api.login(email, password);
+        onLoginSuccess(userData);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Server did not respond. Check connection.');
@@ -71,30 +49,9 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: role === 'admin' ? 'admin@edu.in' : 'passenger@edu.in',
-          password: 'password'
-        })
-      });
-
-      const contentType = response.headers.get('content-type');
-      let data: any = {};
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        const snippet = text.trim().substring(0, 120);
-        throw new Error(`Server returned system response (${response.status}): ${snippet}...`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed quick access');
-      }
-      onLoginSuccess(data);
+      const emailValue = role === 'admin' ? 'admin@edu.in' : 'passenger@edu.in';
+      const userData = await api.login(emailValue, 'password');
+      onLoginSuccess(userData);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to authenticate passenger account.');
     } finally {

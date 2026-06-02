@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BusPass, User } from '../types';
 import QRCodeSVG from './QRCodeSVG';
+import { api } from '../lib/api';
 
 interface BusPassProps {
   user: User;
@@ -85,29 +86,8 @@ export default function BusPassModule({ user, passes, onPassCreated, onPassRenew
         await new Promise(resolve => setTimeout(resolve, 350));
       }
 
-      const response = await fetch('/api/passes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          userName: user.name,
-          passType
-        })
-      });
-
-      const contentType = response.headers.get('content-type');
-      let data: any = {};
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to issue new passenger bus pass');
-      }
+      const expiryMonths = passType === 'Annual' ? 12 : passType === 'Quarterly' ? 3 : 1;
+      const data = await api.issuePass(user.name, passType, expiryMonths, user.id);
 
       onPassCreated(data);
       handleTabChange('view');
@@ -123,24 +103,7 @@ export default function BusPassModule({ user, passes, onPassCreated, onPassRenew
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/passes/${passId}/renew`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const contentType = response.headers.get('content-type');
-      let data: any = {};
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Renewal failed on cloud database endpoints.');
-      }
+      const data = await api.renewPass(passId, 1);
 
       onPassRenewed(data);
     } catch (err: any) {

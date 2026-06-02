@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Route, Ticket, User } from '../types';
 import QRCodeSVG from './QRCodeSVG';
 import { motion } from 'motion/react';
+import { api } from '../lib/api';
 
 interface TicketBookingProps {
   user: User;
@@ -104,34 +105,12 @@ export default function TicketBooking({ user, routes, onBookingSuccess }: Ticket
         await new Promise(resolve => setTimeout(resolve, 400));
       }
 
-      const response = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          routeId: selectedRouteId,
-          travelDate
-        })
-      });
-
-      const contentType = response.headers.get('content-type');
-      let data: any = {};
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Ticketing transaction declined.');
-      }
+      const data = await api.bookTicket(selectedRouteId, selectedSeat, travelDate, calculatedTotalCost, user.id);
 
       setGeneratedTicket(data);
       onBookingSuccess(data);
     } catch (err: any) {
-      setError(err.message || 'Booking transacting failed on cloud server. Try again.');
+      setError(err.message || 'Booking transaction failed. Try again.');
     } finally {
       setLoading(false);
       setPaymentVerifying(false);

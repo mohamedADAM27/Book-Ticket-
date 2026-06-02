@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SystemMetrics, LogEntry } from '../types';
+import { api } from '../lib/api';
 
 export default function CloudMonitoring() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
@@ -11,21 +12,12 @@ export default function CloudMonitoring() {
   const fetchMetricsAndLogs = async () => {
     setUpdating(true);
     try {
-      // Fetch concurrently
-      const [metricsRes, logsRes] = await Promise.all([
-        fetch('/api/metrics'),
-        fetch('/api/logs')
+      const [mData, lData] = await Promise.all([
+        api.getMetrics(),
+        api.getLogs()
       ]);
-
-      const isMetricsJson = metricsRes.ok && metricsRes.headers.get('content-type')?.includes('application/json');
-      const isLogsJson = logsRes.ok && logsRes.headers.get('content-type')?.includes('application/json');
-
-      if (isMetricsJson && isLogsJson) {
-        const mData = await metricsRes.json();
-        const lData = await logsRes.json();
-        setMetrics(mData);
-        setLogs(lData);
-      }
+      setMetrics(mData);
+      setLogs(lData);
     } catch (err) {
       console.error('Error fetching metrics from Express endpoints', err);
     } finally {
@@ -45,12 +37,7 @@ export default function CloudMonitoring() {
   const handleTrafficChange = async (rate: number) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/simulator/traffic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rate })
-      });
-      const data = await response.json();
+      const data = await api.triggerSimulatorTraffic(rate);
       setTrafficRate(rate);
       if (data.success) {
         setMetrics(data.metrics);
@@ -65,7 +52,7 @@ export default function CloudMonitoring() {
 
   const handleTriggerError = async () => {
     try {
-      await fetch('/api/simulator/error', { method: 'POST' });
+      await api.triggerSimulatorError();
       setTimeout(fetchMetricsAndLogs, 100);
     } catch (err) {
       console.error(err);

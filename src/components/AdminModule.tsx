@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Route, Ticket, BusPass } from '../types';
+import { api } from '../lib/api';
 
 interface AdminModuleProps {
   routes: Route[];
@@ -49,16 +50,7 @@ export default function AdminModule({ routes, tickets, passes, onRouteCreated, o
     }
 
     try {
-      const response = await fetch('/api/routes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, destination, fare, duration })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Server rejected route registration.');
-      }
+      const data = await api.createRoute(source, destination, fare);
 
       onRouteCreated(data);
       // Clean up fields
@@ -93,16 +85,7 @@ export default function AdminModule({ routes, tickets, passes, onRouteCreated, o
     }
 
     try {
-      const response = await fetch(`/api/routes/${editingRoute.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingRoute)
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Server rejected route update.');
-      }
+      const data = await api.updateRoute(editingRoute);
 
       onRouteUpdated(data);
       setEditingRoute(null);
@@ -122,14 +105,7 @@ export default function AdminModule({ routes, tickets, passes, onRouteCreated, o
     setError(null);
 
     try {
-      const response = await fetch(`/api/routes/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Server rejected deletion request.');
-      }
+      await api.deleteRoute(id);
 
       onRouteDeleted(id);
     } catch (err: any) {
