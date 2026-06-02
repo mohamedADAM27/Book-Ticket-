@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { User, Route, Ticket, BusPass, LogEntry, SystemMetrics } from './src/types.js';
 
@@ -505,14 +506,18 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // ==========================================
 
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  const distPath = path.join(process.cwd(), 'dist');
+  const isProd = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (!isProd) {
+    console.log('Starting Book Tickets backend in DEVELOPMENT mode (Vite Middleware active)...');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    console.log(`Starting Book Tickets backend in PRODUCTION mode. Serving precompiled assets from: ${distPath}`);
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -520,7 +525,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Book Tickets Server successfully bound & active on Port ${PORT}`);
   });
 }
 
