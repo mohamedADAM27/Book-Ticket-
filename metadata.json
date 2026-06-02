@@ -1,0 +1,6 @@
+{
+  "name": "Book Tickets",
+  "description": "A cloud-hosted bus ticket booking and pass management system showing auto-scaling, metrics, logging, and QR-based verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
