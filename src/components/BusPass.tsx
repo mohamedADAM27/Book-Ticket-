@@ -95,7 +95,16 @@ export default function BusPassModule({ user, passes, onPassCreated, onPassRenew
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to issue new passenger bus pass');
       }
@@ -119,7 +128,16 @@ export default function BusPassModule({ user, passes, onPassCreated, onPassRenew
         headers: { 'Content-Type': 'application/json' }
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Renewal failed on cloud database endpoints.');
       }

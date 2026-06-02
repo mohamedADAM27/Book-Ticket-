@@ -36,7 +36,16 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        const snippet = text.trim().substring(0, 120);
+        throw new Error(`Server returned system response (${response.status}): ${snippet}... Please try quick-login or check server stats.`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Identity verification failed');
@@ -66,12 +75,22 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'passenger@edu.in',
+          email: role === 'admin' ? 'admin@edu.in' : 'passenger@edu.in',
           password: 'password'
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        const snippet = text.trim().substring(0, 120);
+        throw new Error(`Server returned system response (${response.status}): ${snippet}...`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed quick access');
       }
@@ -87,8 +106,8 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
     <div className="max-w-md w-full mx-auto bg-white border border-slate-200 shadow-sm rounded-lg p-8">
       {/* Header */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-950 uppercase">
-          cloud based bus pass sytem
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950 uppercase border-b-2 border-red-800 pb-1.5 inline-block">
+          Book Tickets
         </h2>
       </div>
 
@@ -225,10 +244,35 @@ export default function AuthModule({ onLoginSuccess }: AuthModuleProps) {
         </form>
       )}
 
-      {/* Credentials Help Text */}
-      <div className="mt-8 pt-6 border-t border-slate-100 text-center text-slate-500 font-mono text-[10.5px]">
-        <p>Passenger Sign In: passenger@edu.in / password</p>
-        <p className="mt-1">Admin Sign In: admin@edu.in / password</p>
+      {/* Quick Login & Credentials Help Text */}
+      <div className="mt-8 pt-6 border-t border-slate-100/85">
+        <span className="block text-center text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-3">
+          ⚡ Quick Authentication Links
+        </span>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => handleQuickLogin('passenger')}
+            disabled={loading}
+            className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-350 text-slate-700 font-mono text-[10px] font-bold uppercase rounded cursor-pointer transition-all duration-150 disabled:opacity-50 text-center"
+          >
+            Passenger Login
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickLogin('admin')}
+            disabled={loading}
+            className="py-1.5 px-2 bg-slate-50 hover:bg-[#991b1b] hover:text-white border border-slate-200 hover:border-[#991b1b] text-slate-700 font-mono text-[10px] font-bold uppercase rounded cursor-pointer transition-all duration-150 disabled:opacity-50 text-center"
+          >
+            Admin Dashboard
+          </button>
+        </div>
+        <div className="text-center text-slate-400 font-mono text-[9px] uppercase tracking-wide">
+          <p>Or Manual login: guest / credentials shown below</p>
+          <p className="mt-1 text-slate-500 font-bold normal-case text-[10px] hover:text-slate-700">
+            passenger@edu.in // admin@edu.in (pass: password)
+          </p>
+        </div>
       </div>
     </div>
   );

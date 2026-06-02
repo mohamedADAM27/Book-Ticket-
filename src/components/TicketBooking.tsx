@@ -114,7 +114,16 @@ export default function TicketBooking({ user, routes, onBookingSuccess }: Ticket
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Cloud Server issue (${response.status}): ${text.slice(0, 100)}...`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Ticketing transaction declined.');
       }
